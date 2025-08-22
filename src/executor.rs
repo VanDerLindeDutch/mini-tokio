@@ -8,10 +8,7 @@ use std::task::{Context, Wake};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
-use futures::{
-    future::{BoxFuture, FutureExt},
-    task::{waker_ref, ArcWake},
-};
+
 pub static EXECUTOR: LazyLock<ThreadPool> = LazyLock::new(|| {
     let mut out = ThreadPool { buf: std::sync::mpmc::channel(), threads: Default::default() };
     out.run();
