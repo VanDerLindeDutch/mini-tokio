@@ -53,7 +53,7 @@ impl ThreadPool {
         /*if self.threads {
             unreachable!()
         }*/
-        for _ in 0..4 {
+        for _ in 0..1 {
             let recv = self.buf.1.clone();
             let h = std::thread::spawn(move || {
 

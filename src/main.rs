@@ -52,7 +52,10 @@ fn main() {
                 tracing::info!("{:?}", acceptor.inner.peer_addr().unwrap());
                 loop {
                     let mut buf = [0u8; 1024];
-                    acceptor.async_read(&mut buf, cloned_epoll.clone()).await;
+                    let read = acceptor.async_read(&mut buf, cloned_epoll.clone()).await;
+                    if read.unwrap() == 0 {
+                        break
+                    }
 
                     tracing::info!("{:?}", String::from_utf8_lossy(&buf));
                 }
@@ -64,12 +67,12 @@ fn main() {
         std::thread::sleep(Duration::from_secs(1));
         // let EPOLL = MiniEpoll::new();
         let mut writer = net::connect("127.0.0.1:8080").unwrap();
-        loop {
+        for _ in 0..20 {
             let cloned_epoll = cloned_epoll.clone();
-            let to_write = "some test async bytes";
+            let to_write = "some test async bytes".repeat(1000);
             writer.async_write(to_write.as_bytes(), cloned_epoll.clone()).await;
             tracing::info!("writed!");
-            std::thread::sleep(Duration::from_secs(5));
+            net::sleep(Duration::from_secs(1), cloned_epoll).await;
             // println!("{:?}", acceptor.inner.peer_addr().unwrap());
         }
     });

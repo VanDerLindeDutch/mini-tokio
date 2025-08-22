@@ -8,6 +8,9 @@ use std::task::{Context, Poll};
 // use crate::net::epoll::MiniEpoll;
 
 mod epoll;
+mod timer;
+
+pub use timer::sleep;
 
 pub use epoll::MiniEpoll;
 use crate::net::epoll::Event;
@@ -54,18 +57,18 @@ impl crate::net::TcpStreamWriter<'_, '_> {
 }
 
 impl Future for crate::net::TcpStreamWriter<'_, '_> {
-    type Output = ();
+    type Output = io::Result<usize>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let (strem, buf) = self.split_borrow();
-        // println!("try to read");
+        println!("try to write");
         match strem.inner.write(buf) {
             Ok(v) => {
-                // println!("read {}", v);
-                Poll::Ready(())
+
+                Poll::Ready(Ok(v))
             }
             Err(er) if er.kind() == ErrorKind::WouldBlock => unsafe {
-
+                println!("wr  err {}", er);
                 if self.writer.accepted {
                     return Poll::Pending;
                 }
@@ -74,7 +77,7 @@ impl Future for crate::net::TcpStreamWriter<'_, '_> {
                 Poll::Pending
             }
             Err(er) => {
-                panic!("{}", er)
+                Poll::Ready(Err(er))
             }
         }
     }
@@ -96,7 +99,7 @@ impl TcpStreamReader<'_, '_> {
 }
 
 impl Future for TcpStreamReader<'_, '_> {
-    type Output = ();
+    type Output = io::Result<usize>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let (strem, buf) = self.split_borrow();
@@ -104,16 +107,19 @@ impl Future for TcpStreamReader<'_, '_> {
         match strem.inner.read(buf) {
             Ok(v) => {
                 tracing::info!("read {}", v);
-                Poll::Ready(())
+                Poll::Ready(Ok(v))
             }
-            Err(er) => unsafe {
-                tracing::info!("err {:?}", er);
+            Err(er) if er.kind() == ErrorKind::WouldBlock => unsafe {
+                /*tracing::info!("err {:?}", er);
                /* if self.reader.accepted {
                     return Poll::Pending;
-                }*/
+                }*/*/
                 self.reader.accepted = true;
                 self.epoll.clone().accept(self.reader.inner.as_raw_fd(), cx.waker().clone(), Event::Read).expect("TODO: panic message");
                 Poll::Pending
+            }
+            Err(er) => {
+                Poll::Ready(Err(er))
             }
         }
     }

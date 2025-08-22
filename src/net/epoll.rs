@@ -16,7 +16,6 @@ use libc::{c_int, epoll_ctl, epoll_wait, AF_INET, EPOLLIN, EPOLLONESHOT, EPOLLOU
 pub struct MiniEpoll {
     epollfd: libc::c_int,
     map: Mutex<HashMap<RawFd, Waker>>,
-    key: AtomicU64,
     // events: [libc::epoll_event; 100],
 }
 
@@ -28,7 +27,6 @@ impl MiniEpoll {
         let out = Arc::new(Self {
             epollfd,
             map: Default::default(),
-            key: Default::default(),
         });
         let cloned_out = out.clone();
         thread::spawn(move || {
@@ -42,11 +40,9 @@ impl MiniEpoll {
                         let to_print = ev.u64;
                         let event = ev.events;
 
-                        tracing::info!("first getted {} {}", to_print, event);
-                        if ev.u64 == 0 || (ev.events as i32) & EPOLLIN != EPOLLIN {
-                            continue;
-                        }
-                        tracing::info!("secobd getted {} {}", to_print, event);
+                        // tracing::info!("first getted {} {}", to_print, event);
+
+                        // tracing::info!("secobd getted {} {}", to_print, event);
                         // println!("getted {} {}", to_print, event);
                         if !cloned_out.map.lock().unwrap().contains_key(&(ev.u64 as i32)) {
                             continue;
@@ -76,22 +72,6 @@ impl MiniEpoll {
         if res == -1 {
             panic!("{}", std::io::Error::last_os_error())
         }
-
-        Ok(())
-    }
-    unsafe fn some(self: Arc<Self>) -> Result<(), Error> {
-        let listener = TcpListener::bind("127.0.0.1:8000").unwrap();
-        listener.set_nonblocking(true)?;
-
-        let listener_fd = listener.as_raw_fd();
-        let sock_listen_fd = libc::socket(AF_INET, SOCK_STREAM, 0);
-        //
-
-        /*
-         ev.events = EPOLLIN as u32;
-         ev.u64 = self.key.fetch_add(1, SeqCst);
-         self.map.lock().unwrap().insert(ev.u64, listener);
-         epoll_ctl(epollfd, EPOLL_CTL_ADD, sock_listen_fd, &mut ev);*/
 
         Ok(())
     }
