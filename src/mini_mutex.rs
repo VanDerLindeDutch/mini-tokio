@@ -1,12 +1,9 @@
-use crate::executor::EXECUTOR;
-use std::ops::Deref;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::atomic::Ordering::SeqCst;
-use std::task::{Context, Poll, Waker};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 use std::task::Poll::Ready;
-
+use std::task::{Context, Poll, Waker};
 
 
 pub struct SimpleMutex {

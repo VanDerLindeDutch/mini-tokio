@@ -1,14 +1,14 @@
+use crate::io::epoll::{Event, MiniEpoll, LOCAL_EPOLL};
+use libc::CLOCK_MONOTONIC;
 use std::os::raw::c_int;
 use std::pin::Pin;
-use std::ptr::{null, null_mut};
+use std::ptr::null_mut;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use std::time::Duration;
-use libc::CLOCK_MONOTONIC;
-use crate::net::epoll::Event;
-use crate::net::MiniEpoll;
 
-pub fn sleep(duration: Duration, epoll: Arc<MiniEpoll>) -> TimerAwaiter {
+
+pub fn sleep(duration: Duration) -> TimerAwaiter {
     let timer_fd = unsafe { libc::timerfd_create(CLOCK_MONOTONIC, 0) };
     let mut specs = libc::itimerspec {
         it_interval: libc::timespec {
@@ -21,7 +21,7 @@ pub fn sleep(duration: Duration, epoll: Arc<MiniEpoll>) -> TimerAwaiter {
         },
     };
     unsafe { libc::timerfd_settime(timer_fd, 0, &mut specs, null_mut()); }
-    TimerAwaiter { timer_fd, epoll, first_time: true }
+    TimerAwaiter { timer_fd, epoll: LOCAL_EPOLL.clone(), first_time: true }
 }
 
 pub struct TimerAwaiter {

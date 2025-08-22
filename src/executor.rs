@@ -1,12 +1,9 @@
 use std::cell::RefCell;
-use std::collections::VecDeque;
 use std::fmt::{Debug, Formatter};
-use std::ops::Deref;
 use std::pin::Pin;
 use std::sync::{Arc, LazyLock, Mutex};
 use std::task::{Context, Wake};
 use std::thread::JoinHandle;
-use std::time::Duration;
 
 
 pub static EXECUTOR: LazyLock<ThreadPool> = LazyLock::new(|| {
@@ -16,7 +13,6 @@ pub static EXECUTOR: LazyLock<ThreadPool> = LazyLock::new(|| {
 });
 
 
-pub static S: LazyLock<String> = LazyLock::new(|| { "".to_string() });
 
 pub type Fut = dyn Future<Output=()> + Send + Sync;
 

@@ -1,3 +1,5 @@
+use crate::executor::ThreadPool;
+use libc::{c_int, epoll_ctl, epoll_wait, AF_INET, EPOLLIN, EPOLLONESHOT, EPOLLOUT, EPOLL_CTL_ADD, EPOLL_CTL_MOD, SOCK_STREAM};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::io::Error;
@@ -5,14 +7,16 @@ use std::iter::Map;
 use std::net::{SocketAddr, SocketAddrV4, TcpListener, TcpStream};
 use std::os::fd::{AsRawFd, RawFd};
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering::SeqCst;
+use std::sync::{Arc, LazyLock, Mutex};
 use std::task::Waker;
 use std::{panic, thread};
-use libc::{c_int, epoll_ctl, epoll_wait, AF_INET, EPOLLIN, EPOLLONESHOT, EPOLLOUT, EPOLL_CTL_ADD, EPOLL_CTL_MOD, SOCK_STREAM};
 
-
+pub static LOCAL_EPOLL: LazyLock<Arc<MiniEpoll>> = LazyLock::new(|| {
+    let out = MiniEpoll::new();
+    out
+});
 pub struct MiniEpoll {
     epollfd: libc::c_int,
     map: Mutex<HashMap<RawFd, Waker>>,

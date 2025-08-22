@@ -1,20 +1,19 @@
 #![feature(mpmc_channel)]
 #![feature(lazy_cell_into_inner)]
 
+use crate::executor::EXECUTOR;
 use std::cell::UnsafeCell;
 use std::io::Write;
 use std::sync::{Arc, LazyLock};
 use std::thread::sleep;
 use std::time::Duration;
 use tracing_subscriber::fmt::format::FmtSpan;
-use crate::executor::{EXECUTOR, S};
 // use crate::net::epoll::MiniEpoll;
-use crate::net::{MiniEpoll, TcpListener};
 
 mod executor;
 mod queue;
 mod mini_mutex;
-mod net;
+mod io;
 
 fn main() {
     tracing_subscriber::fmt()
@@ -40,19 +39,19 @@ fn main() {
             // println!("unlock");
         });
     });*/
-    let EPOLL = MiniEpoll::new();
-    let cloned_epoll = EPOLL.clone();
+
+    // let cloned_epoll = EPOLL.clone();
     EXECUTOR.add(async move {
 
-        let mut listener = net::accept("127.0.0.1:8080").unwrap();
+        let mut listener = io::bind("127.0.0.1:8080").unwrap();
         loop {
-            let mut acceptor = listener.accept(cloned_epoll.clone()).await;
-            let cloned_epoll = cloned_epoll.clone();
+            let mut acceptor = listener.accept().await;
+            // let cloned_epoll = cloned_epoll.clone();
             EXECUTOR.add(async move {
-                tracing::info!("{:?}", acceptor.inner.peer_addr().unwrap());
+                // tracing::info!("{:?}", acceptor.inner.peer_addr().unwrap());
                 loop {
                     let mut buf = [0u8; 1024];
-                    let read = acceptor.async_read(&mut buf, cloned_epoll.clone()).await;
+                    let read = acceptor.async_read(&mut buf).await;
                     if read.unwrap() == 0 {
                         break
                     }
@@ -62,17 +61,20 @@ fn main() {
             });
         }
     });
-    let cloned_epoll = EPOLL.clone();
+    // let cloned_epoll = EPOLL.clone();
     EXECUTOR.add(async move {
         std::thread::sleep(Duration::from_secs(1));
         // let EPOLL = MiniEpoll::new();
-        let mut writer = net::connect("127.0.0.1:8080").unwrap();
+
+        let mut writer = io::connect("127.0.0.1:8080").unwrap();
+
         for _ in 0..20 {
-            let cloned_epoll = cloned_epoll.clone();
+            // writer.inner
+            // let cloned_epoll = cloned_epoll.clone();
             let to_write = "some test async bytes".repeat(1000);
-            writer.async_write(to_write.as_bytes(), cloned_epoll.clone()).await;
+            writer.async_write(to_write.as_bytes()).await;
             tracing::info!("writed!");
-            net::sleep(Duration::from_secs(1), cloned_epoll).await;
+            io::sleep(Duration::from_secs(1)).await;
             // println!("{:?}", acceptor.inner.peer_addr().unwrap());
         }
     });
