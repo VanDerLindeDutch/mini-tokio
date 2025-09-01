@@ -31,6 +31,7 @@ name = "mini-tokio"
 version = "0.1.0"
 dependencies = [
  "libc",
+ "thread_local",
  "tracing",
  "tracing-subscriber",
 ]

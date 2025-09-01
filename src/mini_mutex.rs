@@ -22,7 +22,7 @@ impl SimpleMutex {
         SimpleMutex { ready: Default::default(), buf: Arc::new(Default::default()) }
     }
 
-    pub fn  lock(&self) -> Awaiter{
+    pub fn  lock(&self) -> Awaiter<'_>{
         Awaiter{
             mutex: &self,
         }
@@ -37,8 +37,6 @@ impl SimpleMutex {
 
     }
 }
-
-struct Lock {}
 
 impl Future for Awaiter<'_> {
     type Output = ();

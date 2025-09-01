@@ -1,14 +1,7 @@
-use crate::executor::ThreadPool;
-use libc::{c_int, epoll_ctl, epoll_wait, AF_INET, EPOLLIN, EPOLLONESHOT, EPOLLOUT, EPOLL_CTL_ADD, EPOLL_CTL_MOD, SOCK_STREAM};
+use libc::{c_int, epoll_ctl, epoll_wait, EPOLLIN, EPOLLONESHOT, EPOLLOUT, EPOLL_CTL_ADD, EPOLL_CTL_MOD};
 use std::collections::HashMap;
-use std::fmt::Debug;
 use std::io::Error;
-use std::iter::Map;
-use std::net::{SocketAddr, SocketAddrV4, TcpListener, TcpStream};
-use std::os::fd::{AsRawFd, RawFd};
-use std::str::FromStr;
-use std::sync::atomic::AtomicU64;
-use std::sync::atomic::Ordering::SeqCst;
+use std::os::fd::{RawFd};
 use std::sync::{Arc, LazyLock, Mutex};
 use std::task::Waker;
 use std::{panic, thread};
@@ -44,7 +37,7 @@ impl MiniEpoll {
                         let to_print = ev.u64;
                         let event = ev.events;
 
-                        // tracing::info!("first getted {} {}", to_print, event);
+                        tracing::info!("first getted {} {}", to_print, event);
 
                         // tracing::info!("secobd getted {} {}", to_print, event);
                         // println!("getted {} {}", to_print, event);
@@ -72,7 +65,7 @@ impl MiniEpoll {
         let mut ev = libc::epoll_event { events: (event.to_epoll()) as u32, u64: fd as u64 };
         let to_print = ev.u64;
         tracing::info!("insert {}", to_print);
-        let res = epoll_ctl(self.epollfd, flag, fd, &mut ev);
+        let res = unsafe{ epoll_ctl(self.epollfd, flag, fd, &mut ev)};
         if res == -1 {
             panic!("{}", std::io::Error::last_os_error())
         }
