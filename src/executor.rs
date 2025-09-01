@@ -40,7 +40,6 @@ pub struct ThreadPool {
 unsafe impl Send for ThreadPool {}
 unsafe impl Sync for ThreadPool {}
 
-pub fn spawn() {}
 impl ThreadPool {
     pub fn run(&mut self) {
         /*if self.threads {
@@ -51,11 +50,11 @@ impl ThreadPool {
             let h = std::thread::spawn(move || {
 
                 // waker_ref()
-                while let Ok(mut v) = recv.recv() {
+                while let Ok(v) = recv.recv() {
                     // println!("new iter");
                     let w = &v.clone().into();
                     let mut ctx = Context::from_waker(w);
-                    v.fun.lock().unwrap().as_mut().poll(&mut ctx);
+                    let _ = v.fun.lock().unwrap().as_mut().poll(&mut ctx);
                 }
             });
             self.threads.get_mut().push(h);
